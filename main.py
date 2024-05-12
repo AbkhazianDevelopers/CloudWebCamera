@@ -4,13 +4,13 @@ import aiohttp
 import schedule
 import time
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from transliterate import translit
 from data.requests import get_locations, get_camera, get_timelapse
 from loguru import logger
 
 def get_date():
-    return datetime.now().strftime("%Y-%m-%d")
+    return (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
 
 def start_logging():
     logger.add(f"data/logs/{get_date()}.log", rotation="00:00", retention="7 days", level="INFO") 
