@@ -3,11 +3,13 @@ import os
 import aiohttp
 import schedule
 import time
+import boto3
 
 from datetime import datetime, timedelta
 from transliterate import translit
 from data.requests import get_locations, get_camera, get_timelapse
 from loguru import logger
+from config import Config
 
 def get_date():
     return (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
@@ -16,6 +18,14 @@ def start_logging():
     logger.add(f"data/logs/{get_date()}.log", rotation="00:00", retention="7 days", level="INFO") 
 
 start_logging()
+
+s3_client = boto3.client(
+    's3',
+    endpoint_url=Config.endpoint_url,
+    aws_access_key_id=Config.aws_access_key_id,
+    aws_secret_access_key=Config.aws_secret_access_key,
+    region_name=Config.region_name
+)
 
 async def start():
     logger.info(f"Запуск от {get_date()}")
@@ -28,15 +38,10 @@ async def start():
             location_name_latin = translit(location_name, 'ru', reversed=True)
             location_folder = f'data/archive/{location_name_latin}'
 
-            os.makedirs(location_folder, exist_ok=True)
-
-            os.makedirs(location_folder, exist_ok=True)
-
             cameras = await get_camera(location_id)
             for camera in cameras['response'].get('cams', []):
                 channel = camera['channel']
                 channel_folder = os.path.join(location_folder, channel)
-                os.makedirs(channel_folder, exist_ok=True)
 
                 timelapses = await get_timelapse(channel)
                 if isinstance(timelapses, dict) and 'response' in timelapses:
@@ -47,10 +52,11 @@ async def start():
                         async with aiohttp.ClientSession() as session:
                             async with session.get(timelapse_link) as response:
                                 if response.status == 200:
-                                    filename = os.path.join(channel_folder, f"{date_str}.mp4")
-                                    with open(filename, 'wb') as f:
-                                        f.write(await response.read())
-                                    logger.info(f"Записи с камеры {channel} за {date_str} успешно архивированы")
+                                    s3_key = f"{channel_folder}/{date_str}.mp4"
+                                    content = await response.read()
+                                    s3_client.put_object(Bucket=Config.bucket_name, Key=s3_key, Body=content)
+                                    
+                                    logger.info(f"Записи с камеры {channel} за {date_str} успешно архивированы в S3")
                                 else:
                                     logger.error(f"Произошла ошибка при скачивании timelaps за {date_str} с камеры {channel}, ошибка: {response.status}")
                 else:
