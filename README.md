@@ -23,24 +23,14 @@ chmod +x install.bash
 Путь к файлу с логами: `data/logs/(дата).log`
 
 
-## Архитектура:
+## Архитектура s3:
 
 ```
 data/
-│
 ├─── archive/
 │    ├─── Suhum/
 │    ├─── ├─── sukhum_ardzinba_leona/
 │    ├─── ├─── ├───2024-05-12.mp4
 │    ├─── ├─── ...
 │    └─── ...
-├─── logs/
-│    ├─── 2024-05-12.log
-│    ├─── ...
-├─── requests.py
-│install.bash
-│LICENSE
-│main.py
-│README.md
-│requirements.txt
 ```
