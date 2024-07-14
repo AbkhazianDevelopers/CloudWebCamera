@@ -6,7 +6,7 @@ pip3 install -r requirements.txt
 
 cat > /etc/systemd/system/cloudwebcamera.service <<EOF
 [Unit]
-Description=Flask App
+Description=CloudWebCamera By Reques6e
 After=network.target
 
 [Service]
