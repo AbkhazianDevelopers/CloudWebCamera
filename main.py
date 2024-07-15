@@ -36,12 +36,10 @@ async def start():
             location_id = location["location_id"]
             location_name = location["location_name"]
             location_name_latin = translit(location_name, 'ru', reversed=True)
-            location_folder = f'data/archive/{location_name_latin}'
 
             cameras = await get_camera(location_id)
             for camera in cameras['response'].get('cams', []):
                 channel = camera['channel']
-                channel_folder = os.path.join(location_folder, channel)
 
                 timelapses = await get_timelapse(channel)
                 if isinstance(timelapses, dict) and 'response' in timelapses:
@@ -52,7 +50,7 @@ async def start():
                         async with aiohttp.ClientSession() as session:
                             async with session.get(timelapse_link) as response:
                                 if response.status == 200:
-                                    s3_key = f"{channel_folder}/{date_str}.mp4"
+                                    s3_key = f"archive/{location_name_latin}/{channel}/{date_str}.mp4"
                                     content = await response.read()
                                     s3_client.put_object(Bucket=Config.bucket_name, Key=s3_key, Body=content)
                                     
