@@ -4,6 +4,7 @@ import aiohttp
 import schedule
 import time
 import boto3
+import ntplib
 
 from datetime import datetime, timedelta
 from transliterate import translit
@@ -12,21 +13,27 @@ from loguru import logger
 from config import Config
 
 def get_date():
-    return (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+    c = ntplib.NTPClient()
+    response = c.request('ntp.cyxym.net')
+    ntp_time = datetime.utcfromtimestamp(response.tx_time) - timedelta(days=1)
+    return ntp_time.strftime("%Y-%m-%d")
 
 def start_logging():
     logger.add(f"data/logs/{get_date()}.log", rotation="00:00", retention="7 days", level="INFO") 
 
 start_logging()
 
-s3_client = boto3.client(
-    's3',
-    endpoint_url=Config.endpoint_url,
-    aws_access_key_id=Config.aws_access_key_id,
-    aws_secret_access_key=Config.aws_secret_access_key,
-    region_name=Config.region_name
-)
-
+try:
+    s3_client = boto3.client(
+        's3',
+        endpoint_url=Config.endpoint_url,
+        aws_access_key_id=Config.aws_access_key_id,
+        aws_secret_access_key=Config.aws_secret_access_key,
+        region_name=Config.region_name
+    )
+except ValueError:
+    logger.error(f"Не заполнены данные в конфиге")
+    
 async def start():
     logger.info(f"Запуск от {get_date()}")
 
