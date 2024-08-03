@@ -4,6 +4,7 @@ import aiohttp
 import schedule
 import time
 import boto3
+import ntplib
 
 from datetime import datetime, timedelta
 from transliterate import translit
@@ -11,11 +12,30 @@ from data.requests import get_locations, get_camera, get_timelapse
 from loguru import logger
 from config import Config
 
+def get_ntp_time():
+    c = ntplib.NTPClient()
+    response = c.request('pool.ntp.org')
+    return datetime.utcfromtimestamp(response.tx_time)
+
+def get_system_time():
+    return datetime.utcnow()
+
+def check_time_difference():
+    ntp_time = get_ntp_time()
+    system_time = get_system_time()
+    difference = abs((ntp_time - system_time).total_seconds())
+
+    if difference > 300:  # 300 секунд это 5 минут
+        logger.error(f"Разница между системным временем ({system_time}) и NTP временем ({ntp_time}) больше пяти минут. Пожалуйста, исправьте системное время.")
+        exit(1)
+
 def get_date():
     return (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
 
 def start_logging():
-    logger.add(f"data/logs/{get_date()}.log", rotation="00:00", retention="7 days", level="INFO") 
+    logger.add(f"data/logs/{get_date()}.log", rotation="00:00", retention="7 days", level="INFO")
+
+check_time_difference()
 
 start_logging()
 
