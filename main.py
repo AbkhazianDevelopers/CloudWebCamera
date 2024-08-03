@@ -24,7 +24,7 @@ def check_time_difference():
     ntp_time = get_ntp_time()
     system_time = get_system_time()
     difference = abs((ntp_time - system_time).total_seconds())
-    difference = 444.7000
+
     if difference > 300:  # 300 секунд это 5 минут
         logger.error(f"Разница между системным временем ({system_time}) и NTP временем ({ntp_time}) больше пяти минут. Пожалуйста, исправьте системное время.")
         exit(1)
